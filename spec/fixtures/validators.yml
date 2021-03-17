@@ -1,0 +1,244 @@
+openapi: 3.0.1
+info:
+  title: DocShell API. Слепки данных
+  version: 1.0.0
+tags:
+  - name: information_systems
+    description: Информационные системы
+paths:
+  /inventory/base:
+    post:
+      tags: [inventory]
+      summary: Инфраструктура ИТ / Основные данные
+      parameters: [{name: data, in: query, schema: { $ref: "#/components/schemas/InformationSystemBase" } }]
+      responses: { 200: {description: ''}}
+  /inventory/is_pdn:
+    post:
+      tags: [inventory]
+      summary: Инфраструктура ИТ / Классификация ИСПДн
+      parameters: [{name: data, in: query, schema: { $ref: "#/components/schemas/InformationSystemClassifyIspdn" } }]
+      responses: { 200: {description: ''}}
+  /inventory/gis:
+    post:
+      tags: [inventory]
+      summary: Инфраструктура ИТ / Классификация ГИС
+      parameters: [{name: data, in: query, schema: { $ref: "#/components/schemas/InformationSystemClassifyGis" } }]
+      responses: { 200: {description: ''}}
+  /inventory/people:
+    post:
+      tags: [inventory]
+      summary: Инфраструктура ИТ / Лица, имеющие право доступа
+      parameters: [{name: data, in: query, schema: { $ref: "#/components/schemas/InformationSystemAuthorizedPersons" } }]
+      responses: { 200: {description: ''}}
+  /inventory/subjects:
+    post:
+      tags: [inventory]
+      summary: Инфраструктура ИТ / Обработка персональных данных
+      parameters: [{name: data, in: query, schema: { $ref: "#/components/schemas/InformationSystemSubjects" } }]
+      responses: { 200: {description: ''}}
+  /inventory/data_center:
+    post:
+      tags: [inventory]
+      summary: Инфраструктура ИТ / Местонахождение базы данных, содержащей ПДн и ЦОД
+      parameters: [{name: data, in: query, schema: { $ref: "#/components/schemas/InformationSystemDataCenter" } }]
+      responses: { 200: {description: ''}}
+
+components:
+  schemas:
+    InformationSystemBase:
+      description: Основные данные
+      type: object
+      allOf:
+        - required: [name, system_type_id, info_categories, technologies]
+          properties:
+            name:
+              description: Наименование
+              type: string
+            system_type_id:
+              description: Тип
+              type: number
+            info_categories:
+              description: Категории информации
+              type: array
+              items:
+                type: number
+              example:
+                - Пдн
+                - ГИС
+            protection_level:
+              description: Уровень защищенности
+              type: number
+            protection_class:
+              description: Класс защищенности
+              type: number
+            technologies:
+              description: Технологии
+              type: array
+              items:
+                type: number
+        - oneOf:
+            - required: [ use_skzi ]
+              properties:
+                use_skzi:
+                  description: Применение СКЗИ
+                  type: boolean
+                  enum: [false]
+            - required: [ use_skzi, skzis ]
+              properties:
+                use_skzi:
+                  description: Применение СКЗИ
+                  type: boolean
+                  enum: [true]
+                skzis:
+                  description: Перечень СКЗИ
+                  type: array
+                  items:
+                    type: string
+
+    InformationSystemClassifyIspdn:
+      description: Классификация ИСПДн
+      required: [pdn_categories, pdn_subjects_categories, pdn_subject_amount_id, pdn_threat_type_id]
+      properties:
+        pdn_categories:
+          description: Категории обрабатываемых персональных данных
+          type: array
+          items:
+            type: number
+        pdn_subjects_categories:
+          description: Категории субъектов, персональные данные которых обрабатываются
+          type: array
+          items:
+            type: number
+        pdn_subject_amount_id:
+          description: Количество субъектов, персональные данные которых обрабатываются
+          type: number
+        pdn_threat_type_id:
+          description: Тип угроз
+          type: number
+
+    InformationSystemClassifyGis:
+      description: Классификация ГИС
+      required: [gis_type_id, gis_damage_id, gis_scale_id]
+      properties:
+        gis_type_id:
+          description: ГИС/МИС
+          type: number
+        gis_damage_id:
+          description: Степень возможного ущерба
+          type: number
+        gis_scale_id:
+          description: Масштаб
+          type: number
+
+    InformationSystemAuthorizedPerson:
+      description: Лица, имеющие право доступа
+      properties:
+        authorized_persons:
+          type: array
+          items:
+            type: object
+            required: [employee_fio, access_right_id]
+            properties:
+              employee_fio:
+                description: Фамилия Имя Отчество Работника
+                type: string
+              access_right_id:
+                description: Право доступа
+                type: number
+
+    InformationSystemSubjectsProcessing:
+      description: Обработка персональных данных
+      type: object
+      allOf:
+        - required: [subjects_md5, processing_type_id, internal_data_transmission, external_data_transmission, pdn_actions]
+          properties:
+            subjects_md5:
+              description: Хэш по субъектам персональных данных
+              type: object
+              required: [md5, valid]
+              properties:
+                md5: {type: string}
+                valid: {type: boolean, enum: [true]}
+            processing_type_id:
+              description: Тип обработки ПДн
+              type: number
+            internal_data_transmission:
+              description: Передачи персональных данных по внутренней сети
+              type: boolean
+            external_data_transmission:
+              description: Передача персональных данных по сети Интернет
+              type: boolean
+            pdn_actions:
+              description: Действия с ПДн
+              type: array
+              items:
+                type: number
+        - oneOf:
+          - required: [use_transboundary_pdn]
+            properties:
+              use_transboundary_pdn:
+                description: Флаг, осуществляется ли трансграничная передача ПДн
+                type: boolean
+                enum: [false]
+          - required: [use_transboundary_pdn, transboundary_countries]
+            properties:
+              use_transboundary_pdn:
+                description: Флаг, осуществляется ли трансграничная передача ПДн
+                type: boolean
+                enum: [true]
+              transboundary_countries:
+                description: Страны, в которые осуществляется передача персональных данных
+                type: array
+                items:
+                  type: number
+
+    InformationSystemDataCenter:
+      description: Местонахождение базы данных, содержащей ПДн и ЦОД
+      required: [use_data_center, data_center_outside_organization_id, data_center_address_md5]
+      properties:
+        use_data_center:
+          description: Используется ли ЦОД
+          type: boolean
+        data_center_outside_organization_id:
+          description: ЦОД. Сторонняя организация
+          type: string
+          format: uuid
+        data_center_address_md5:
+          description: Хэш адреса ЦОД
+          type: object
+          required: [md5, valid]
+          properties:
+            md5: {type: string}
+            valid: {type: boolean, enum: [true]}
+
+    Subject:
+      required: [id, name, special_pdns, biometric_pdns, others_pdns, public_pdns]
+      properties:
+        id:
+          description: Идентификатор
+          readOnly: true
+          type: string
+          format: uuid
+        name:
+          description: Наименование
+          type: string
+        special_pdns:
+          description: Специальные ПДн
+          type: array
+          items:
+            type: string
+        biometric_pdns:
+          description: Биометрические ПДн
+          type: array
+          items:
+            type: string
+        others_pdns:
+          description: Иные ПДн
+          type: array
+          items:
+            type: string
+        public_pdns:
+          description: Общедоступные ПДн
+          type: array
+          items:
+            type: string

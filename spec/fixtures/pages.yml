@@ -1,0 +1,88 @@
+InformationSystem:
+  kind: array_for_page
+  page_fields:
+    base:
+      serializer_options:
+        serialiser: InformationSystemSerializer
+        fields: [name, system_type_id, info_categories, protection_level, protection_class, technologies, use_skzi, skzis]
+      validator: InformationSystemBase
+      page_ids: [103, 303]
+    ispdn_classification:
+      serializer_options:
+        fields: [pdn_categories, pdn_subjects_categories, pdn_subject_amount_id, pdn_threat_type_id]
+      validator: InformationSystemClassifyIspdn
+      page_ids: [105, 305]
+    gis_classification:
+      serializer_options:
+        fields: [gis_type_id, gis_damage_id, gis_scale_id]
+      validator: InformationSystemClassifyGis
+      page_ids: [104, 304]
+    subjects_processing:
+      serializer_options:
+        fields: [processing_type_id, internal_data_transmission, external_data_transmission, pdn_actions, use_transboundary_pdn, transboundary_countries]
+      validator: InformationSystemSubjectsProcessing
+      aggregates:
+        - association: subjects # subjects_md5
+          page_alias: subjects
+      page_ids: [127, 327]
+    data_center_address:
+      serializer_options:
+        fields: [use_data_center, data_center_outside_organization_id]
+      subscriptions:
+        - service: ds # address_md5
+          model: DataModel::OutsideOrganization
+          ref_id_name: data_center_outside_organization_id
+          page_alias: address
+          relation_size: single
+      validator: InformationSystemDataCenter
+      page_ids: [128, 328]
+
+Subject:
+  kind: frame
+  cascade:
+    - information_system
+  page_fields:
+    subject:
+      serializer_options:
+        fields: [id, name, special_pdns, biometric_pdns, others_pdns, public_pdns]
+      validator:
+        required: [id, name, special_pdns, biometric_pdns, others_pdns, public_pdns]
+        properties:
+          id:
+            description: Идентификатор
+            readOnly: true
+            type: string
+            format: uuid
+          name:
+            description: Наименование
+            type: string
+          special_pdns:
+            description: Специальные ПДн
+            type: array
+            items:
+              type: string
+          biometric_pdns:
+            description: Биометрические ПДн
+            type: array
+            items:
+              type: string
+          others_pdns:
+            description: Иные ПДн
+            type: array
+            items:
+              type: string
+          public_pdns:
+            description: Общедоступные ПДн
+            type: array
+            items:
+              type: string
+
+
+AuthorizedPerson:
+  kind: array_for_page
+  page_fields:
+    authorized_people:
+      serializer_options:
+        fields: [name, system_type_id, info_categories, protection_level, protection_class, technologies, use_skzi, skzis]
+      validator: InformationSystemAuthorizedPerson
+      page_ids: [109, 309]
