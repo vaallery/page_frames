@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
-require "securerandom"
-require_relative "rpc_api"
+require 'securerandom'
+require_relative 'rpc_api'
+
+# Служебные функции обеспечивающие работу RPC клиента
 
 module PageFrames
   class RpcClient
@@ -14,7 +16,7 @@ module PageFrames
     option :condition, default: proc { ConditionVariable.new }
 
     def self.fetch
-      Thread.current["frame_service.rpc_client"] ||= new.start
+      Thread.current['frame_service.rpc_client'] ||= new.start
     end
 
     def start
@@ -36,12 +38,12 @@ module PageFrames
 
     def create_queue
       channel = RabbitMq.channel
-      channel.queue("frame", durable: true)
+      channel.queue('frame', durable: true)
     end
 
     def create_reply_queue
       channel = RabbitMq.channel
-      channel.queue("amq.rabbitmq.reply-to")
+      channel.queue('amq.rabbitmq.reply-to')
     end
 
     def publish(payload, opts = {})
@@ -51,7 +53,7 @@ module PageFrames
         @queue.publish(
           payload,
           opts.merge(
-            app_id: "gdocs",
+            app_id: 'gdocs',
             correlation_id: @correlation_id,
             reply_to: @reply_queue.name
           )

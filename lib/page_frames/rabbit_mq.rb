@@ -1,8 +1,12 @@
+# frozen_string_literal: true
+
 require 'bunny'
+
+# Модуль модключения к RabbitMq
 
 module PageFrames
   module RabbitMq
-    extend self
+    module_function
 
     @mutex = Mutex.new
 
@@ -17,7 +21,7 @@ module PageFrames
     end
 
     def addresses
-      PageFrames.config.bunny_amqp_addresses&.split(",")
+      PageFrames.config.bunny_amqp_addresses&.split(',')
     end
 
     def channel

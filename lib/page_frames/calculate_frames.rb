@@ -1,4 +1,11 @@
+# frozen_string_literal: true
+
+require 'active_model_serializers'
+require 'json-schema'
 require_relative 'model_pages_config'
+
+# Сервисная команда для расчета фремов объекта модели
+# PageFrames::CalculateFrames.new('InformationSystem').call(@information_system)
 
 module PageFrames
   class CalculateFrames
@@ -12,7 +19,7 @@ module PageFrames
       pages = page_fields.map do |page, page_attrs|
         [page.to_s, serialize_and_validate_page(object, page_attrs)]
       end
-      Hash[pages]
+      pages.to_h
     end
 
     private
@@ -40,8 +47,9 @@ module PageFrames
       subscriptions = page_attrs[:subscriptions]
       aggregates = page_attrs[:aggregates]
 
-      serializer_options.merge!(root: "object", for_md5: true)
-      page_data = ActiveModelSerializers::SerializableResource.new(object, serializer_options).as_json[:object].compact
+      serializer_options.merge!(root: 'object')
+      page_data = ActiveModelSerializers::SerializableResource.new(object, serializer_options)
+                                                              .as_json.with_indifferent_access[:object].compact
 
       page_data.merge!(aggregated_data(aggregates, object))
       page_data.merge!(subscribed_data(subscriptions, object))
@@ -54,7 +62,11 @@ module PageFrames
     end
 
     def validation_schema(validator)
-      validator.is_a?(Hash) ? validator : { '$ref': "#/components/schemas/#{validator}" }.merge(PageFrames.config.validators)
+      if validator.is_a?(Hash)
+        validator
+      else
+        { '$ref': "#/components/schemas/#{validator}" }.merge(PageFrames.config.validators)
+      end
     end
 
     def aggregated_data(aggregates, object)
@@ -65,8 +77,10 @@ module PageFrames
         page_alias = aggregate_params[:page_alias]
         pageable_type = aggregate_params[:model]
         unless page_alias && association_name && pageable_type
-          raise Error, "В конфигурации модели #{@model} некорректно указаны настройки aggregates, должны присутствовать ключи: model, association, page_alias"
+          raise Error,
+                "В конфигурации модели #{@model} некорректно указаны настройки aggregates, должны присутствовать ключи: model, association, page_alias"
         end
+
         pageable_ids = object.send(association_name).ids
         info = PageFrames::RpcClient.fetch.aggregated_md5(page_alias, pageable_type, pageable_ids)
         data["#{association_name}_md5".to_sym] = info
@@ -81,13 +95,15 @@ module PageFrames
         association_name = subscription_params[:ref_id_name]
         page_alias = subscription_params[:page_alias]
         unless page_alias && association_name && pageable_type
-          raise Error, "В конфигурации модели #{@model} некорректно указаны настройки subscriptions, должны присутствовать ключи: model, ref_id_name, page_alias"
+          raise Error,
+                "В конфигурации модели #{@model} некорректно указаны настройки subscriptions, должны присутствовать ключи: model, ref_id_name, page_alias"
         end
+
         if (model_id = object.send(association_name))
           pageable_ids = [model_id]
           info = FramesService::RpcClient.fetch.aggregated_md5(page_alias, pageable_type, pageable_ids)
         else
-          info = { md5: "", valid: false }
+          info = { md5: '', valid: false }
         end
         data["#{association_name}_md5"] = info
       end
@@ -95,21 +111,19 @@ module PageFrames
 
     # Метод пробегает по всем объектам и формирует обобщенные значения (MD5 и valid) для всех страниц, которые зависят от Модели
     def aggregated_md5_for(relation)
-
       total_pages = relation.each_with_object({}) do |item, h|
         item.pages_frame&.pages&.each do |page, params|
           if h[page]
-            h[page]["md5"] << params["md5"]
-            h[page]["valid"] &= params["valid"]
+            h[page]['md5'] << params['md5']
+            h[page]['valid'] &= params['valid']
           else
-            h[page] = { "md5" => params["md5"], "valid" => params["valid"] }
+            h[page] = { 'md5' => params['md5'], 'valid' => params['valid'] }
           end
         end
       end
       # В p["md5"] сейчас лежит конкатенированая строка со всеми md5 всех объектов, заменяем ее на вычесленную md5
-      total_pages.transform_values! { |page| page.tap { |p| p["md5"] = Digest::MD5.hexdigest(p["md5"]) } }
+      total_pages.transform_values! { |page| page.tap { |p| p['md5'] = Digest::MD5.hexdigest(p['md5']) } }
       total_pages.with_indifferent_access
     end
   end
 end
-

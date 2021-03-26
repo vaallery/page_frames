@@ -1,31 +1,37 @@
+# frozen_string_literal: true
+
 require_relative 'recalculate'
 
-module PageFrames::Consumer
-  module_function
+# Функциональный модуль для реализации серверной части для вызова функции RPC frames.recalculate
 
-  def call
-    channel = RabbitMq.consumer_channel
-    exchange = channel.default_exchange
-    queue = channel.queue("frames.recalculate", durable: true)
+module PageFrames
+  module Consumer
+    module_function
 
-    queue.subscribe(manual_ack: true) do |delivery_info, properties, payload|
-      payload = JSON(payload, symbolize_names: true)
+    def call
+      channel = RabbitMq.consumer_channel
+      exchange = channel.default_exchange
+      queue = channel.queue('frames.recalculate', durable: true)
 
-      result = if (model_class = payload[:model].safe_constantize)
-                 channel.acknowledge(delivery_info.delivery_tag, false)
-                 begin
-                   PageFrames::Recalculate.call(model_class, payload[:organization_id])
-                   { status: :ok }
-                 rescue StandardError => e
-                   { status: :fail, message: e.message }
+      queue.subscribe(manual_ack: true) do |delivery_info, properties, payload|
+        payload = JSON(payload, symbolize_names: true)
+
+        result = if (model_class = payload[:model].safe_constantize)
+                   channel.acknowledge(delivery_info.delivery_tag, false)
+                   begin
+                     PageFrames::Recalculate.call(model_class, payload[:organization_id])
+                     { status: :ok }
+                   rescue StandardError => e
+                     { status: :fail, message: e.message }
+                   end
                  end
-               end
-      if result
-        exchange.publish(
-          result.to_json,
-          routing_key: properties.reply_to,
-          correlation_id: properties.correlation_id
-        )
+        if result
+          exchange.publish(
+            result.to_json,
+            routing_key: properties.reply_to,
+            correlation_id: properties.correlation_id
+          )
+        end
       end
     end
   end

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'active_support/core_ext/enumerable'
+
 # Функциональный модуль для работы с файлом конфигурации страниц.
 
 module PageFrames
@@ -34,13 +36,13 @@ module PageFrames
       model_pages_config[model][:page_fields]
     end
 
-    private
+    # private
 
     def models_by_dependency_for_model(model)
       return [] unless model_pages_config[model]
 
       models = (model_pages_config[model][:page_fields].values.pluck(:aggregates) +
-        model_pages_config[model.to_sym][:page_fields].values.pluck(:subscriptions)).flatten.compact.pluck(:model).uniq
+        model_pages_config[model.to_sym][:page_fields].values.pluck(:subscriptions)).flatten.compact.pluck(:model).compact.uniq
       models_by_dependency_for_models(models)
     end
 
@@ -54,9 +56,10 @@ module PageFrames
     end
 
     # Метод правильно выстраивает зависти (все зависимые элементы выбранного элемента находятся слева от него)
+    # rubocop:disable Naming/MethodParameterName
     def arrange_dependencies(a = [], b = [])
       (a & b) + (a - b) + (b - a)
     end
+    # rubocop:enable Naming/MethodParameterName
   end
 end
-
