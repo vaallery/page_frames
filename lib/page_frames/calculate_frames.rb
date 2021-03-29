@@ -101,7 +101,7 @@ module PageFrames
 
         if (model_id = object.send(association_name))
           pageable_ids = [model_id]
-          info = FramesService::RpcClient.fetch.aggregated_md5(page_alias, pageable_type, pageable_ids)
+          info = PageFrames::RpcClient.fetch.aggregated_md5(page_alias, pageable_type, pageable_ids)
         else
           info = { md5: '', valid: false }
         end
