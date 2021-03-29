@@ -37,7 +37,7 @@ module PageFrames
 
       # Пересчитать связанные ассоциации, только для связей belongs_to, если будут связи has_many, то надо будет допилить
       def recalculate_associations
-        return if (associations = PageFrames::ModelPagesConfig.config_for_model(model)[:cascade])
+        return unless (associations = PageFrames::ModelPagesConfig.config_for_model(model)[:cascade])
 
         associations.each do |ref|
           next unless (object = send(ref))
@@ -45,7 +45,7 @@ module PageFrames
 
           object.update_frame
           object.recalculate_associations
-          object.publish
+          object.update_pages
         end
       end
 
